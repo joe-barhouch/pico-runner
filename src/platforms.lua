@@ -3,6 +3,9 @@
 Platform = {}
 Platform.__index = Platform
 
+-- Table to encapsulate manager state
+PlatformManager = {}
+
 -- The `new` function now takes a slot_index to guarantee its position
 function Platform:new(x, y, speed, sprite, width, direction, slot_index)
   local platform = setmetatable({}, Platform)
@@ -56,34 +59,34 @@ end
 -- ======================================================
 
 function init_platforms()
-  platform_base_speed = 0.5
-  platforms = {}
-  plat_widths = { 2, 3, 4 } -- Possible widths
+  PlatformManager.platform_base_speed = 0.5
+  PlatformManager.platforms = {}
+  PlatformManager.plat_widths = { 2, 3, 4 }
 
   -- Timer-based spawning
-  spawn_timer = 0
-  spawn_delay = 30 -- Spawn a platform every 30 frames (0.5 seconds) if above minimum
+  PlatformManager.spawn_timer = 0
+  PlatformManager.spawn_delay = 30 -- frames
 
   -- Simplified Slot System Setup
-  min_distance = 24 -- The space between the start of each slot
+  PlatformManager.min_distance = 24
 
   -- Create lists of *available* slot indices
-  y_free_slots = {}
-  local num_y_slots = flr((SCREEN_HEIGHT - 32) / min_distance) -- Usable vertical space
+  PlatformManager.y_free_slots = {}
+  local num_y_slots = flr((SCREEN_HEIGHT - 32) / PlatformManager.min_distance)
   for i = 1, num_y_slots do
-    add(y_free_slots, i)
+    add(PlatformManager.y_free_slots, i)
   end
 
-  x_free_slots = {}
-  local num_x_slots = flr((SCREEN_WIDTH - 32) / min_distance) -- Usable horizontal space
+  PlatformManager.x_free_slots = {}
+  local num_x_slots = flr((SCREEN_WIDTH - 32) / PlatformManager.min_distance)
   for i = 1, num_x_slots do
-    add(x_free_slots, i)
+    add(PlatformManager.x_free_slots, i)
   end
 end
 
 -- Gets a slot by *removing* it from the list of available slots. Guaranteed unique.
 function get_free_slot(is_horizontal)
-  local free_slots = is_horizontal and y_free_slots or x_free_slots
+  local free_slots = is_horizontal and PlatformManager.y_free_slots or PlatformManager.x_free_slots
   if #free_slots == 0 then
     return nil
   end
@@ -97,7 +100,7 @@ end
 -- Releases a slot by *adding* its index back to the list of available slots.
 function release_slot(platform)
   local is_horizontal = platform.direction == DIRECTIONS.RIGHT_TO_LEFT or platform.direction == DIRECTIONS.LEFT_TO_RIGHT
-  local free_slots = is_horizontal and y_free_slots or x_free_slots
+  local free_slots = is_horizontal and PlatformManager.y_free_slots or PlatformManager.x_free_slots
 
   -- Only release if the platform had a valid slot
   if platform.slot_index then
@@ -115,7 +118,7 @@ function spawn_platform()
 
   -- CORE FIX 1: Count only platforms of the CURRENT direction
   local current_direction_platforms = 0
-  for plat in all(platforms) do
+  for plat in all(PlatformManager.platforms) do
     if plat.direction == direction then
       current_direction_platforms += 1
     end
@@ -128,10 +131,10 @@ function spawn_platform()
     should_spawn = true
   else
     -- TIMER: If at or above minimum, use the timer for steady spawning
-    spawn_timer += 1
-    if spawn_timer >= spawn_delay then
+    PlatformManager.spawn_timer += 1
+    if PlatformManager.spawn_timer >= PlatformManager.spawn_delay then
       should_spawn = true
-      spawn_timer = 0
+      PlatformManager.spawn_timer = 0
     end
   end
 
@@ -146,20 +149,22 @@ function spawn_platform()
     return
   end -- No free slots, can't spawn right now
 
-  local speed = platform_base_speed + rnd(0.5)
+  local plat_width = rnd(PlatformManager.plat_widths)
+  local speed = PlatformManager.platform_base_speed + rnd(0.5)
   local x, y
 
   -- Calculate position from the slot index, guaranteeing no overlap
   if is_horizontal then
-    y = 16 + slot_index * min_distance
-    x = (direction == DIRECTIONS.RIGHT_TO_LEFT) and SCREEN_WIDTH + 8 or -48
+    y = 16 + slot_index * PlatformManager.min_distance
+    x = (direction == DIRECTIONS.RIGHT_TO_LEFT) and SCREEN_WIDTH + 8 or - (plat_width * 8)
   else -- Vertical
-    x = 16 + slot_index * min_distance
+    x = 16 + slot_index * PlatformManager.min_distance
+    x = clamp(x, 0, SCREEN_WIDTH - plat_width * 8)
     y = (direction == DIRECTIONS.UP_TO_DOWN) and -16 or SCREEN_HEIGHT + 8
   end
 
-  local new_platform = Platform:new(x, y, speed, 7, rnd(plat_widths), direction, slot_index)
-  add(platforms, new_platform)
+  local new_platform = Platform:new(x, y, speed, 7, plat_width, direction, slot_index)
+  add(PlatformManager.platforms, new_platform)
 
   spawn_coin_on_platform(new_platform)
 end
@@ -169,20 +174,32 @@ function update_platforms()
   spawn_platform()
 
   -- Update existing platforms
-  for i = #platforms, 1, -1 do
-    local plat = platforms[i]
+  for i = #PlatformManager.platforms, 1, -1 do
+    local plat = PlatformManager.platforms[i]
     plat:update()
 
     if plat:is_off_screen() then
       -- CRUCIAL: Release the slot before deleting the platform
       release_slot(plat)
-      del(platforms, plat)
+      del(PlatformManager.platforms, plat)
     end
   end
 end
 
+-- Remove platforms that don't match the given direction
+function cleanup_platforms(new_direction)
+  for i = #PlatformManager.platforms, 1, -1 do
+    local plat = PlatformManager.platforms[i]
+    if plat.direction ~= new_direction then
+      release_slot(plat)
+      del(PlatformManager.platforms, plat)
+    end
+  end
+  PlatformManager.spawn_timer = 0
+end
+
 function draw_platforms()
-  for plat in all(platforms) do
+  for plat in all(PlatformManager.platforms) do
     plat:draw()
   end
 end

@@ -85,6 +85,7 @@ function check_direction_change()
     -- Only change if we need to
     if target_direction ~= current_direction then
         current_direction = target_direction
+        cleanup_platforms(current_direction)
     end
 end
 

@@ -101,7 +101,7 @@ function check_platform_landing(player_x, player_y, goal_x, goal_y, vel_y)
   local earliest_collision = nil
   local collision_platform = nil
 
-  for plat in all(platforms) do
+  for plat in all(PlatformManager.platforms) do
     local t, nx, ny, tx, ty, intersect = swept_aabb_collision(player_x, player_y, player_w, player_h, plat.x, plat.y, plat.width * 8, 8, goal_x, goal_y)
 
     -- Only consider top surface collisions (normal pointing up)

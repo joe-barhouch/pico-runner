@@ -131,14 +131,16 @@ function Player:move()
     end
 
     -- Apply platform speed if on one
-    if self.on_ground and plat_speed then 
-
+    if self.on_ground and plat_speed then
         if platform.direction == DIRECTIONS.RIGHT_TO_LEFT then
             self.x -= plat_speed
         elseif platform.direction == DIRECTIONS.LEFT_TO_RIGHT then
             self.x += plat_speed
+        elseif platform.direction == DIRECTIONS.UP_TO_DOWN then
+            self.y += plat_speed
+        elseif platform.direction == DIRECTIONS.DOWN_TO_UP then
+            self.y -= plat_speed
         end
-
 
         if self.x < 0 then
             self.x = 0

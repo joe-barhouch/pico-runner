@@ -56,7 +56,7 @@ end
 -- ======================================================
 
 function init_platforms()
-  base_speed = 0.5
+  platform_base_speed = 0.5
   platforms = {}
   plat_widths = { 2, 3, 4 } -- Possible widths
 
@@ -146,7 +146,7 @@ function spawn_platform()
     return
   end -- No free slots, can't spawn right now
 
-  local speed = base_speed + rnd(0.5)
+  local speed = platform_base_speed + rnd(0.5)
   local x, y
 
   -- Calculate position from the slot index, guaranteeing no overlap

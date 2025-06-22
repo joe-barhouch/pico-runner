@@ -7,7 +7,7 @@ function init_obstacles()
     -- Frames between spawns
     max_obstacles = 4
     obstacle_y = 110
-    base_speed = 1.5
+    obstacle_base_speed = 1.5
     speed_variation = 0.5
 end
 
@@ -16,7 +16,7 @@ function spawn_obstacle()
         local new_obstacle = {
             x = 128, -- Start off-screen to the right
             y = obstacle_y - rnd(40),
-            speed = base_speed + rnd(speed_variation * 2) - speed_variation,
+            speed = obstacle_base_speed + rnd(speed_variation * 2) - speed_variation,
             sprite = 5
         }
         add(obstacles, new_obstacle)
